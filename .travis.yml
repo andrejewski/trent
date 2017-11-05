@@ -1,3 +1,12 @@
 language: node_js
 node_js:
 - node
+deploy:
+  provider: npm
+  email: christopher.andrejewski@gmail.com
+  api_key:
+    secure: wg11ZyS84KWMS4r9l2ukx4nGPTlZcL13WGbdvncHFw1Wa8cBSFAEiHRTY5r3pjAoaCphOURQwtvCldFP7+CgRSeOOVmoppTOUKdhilqp3E9jwCPnvucfKry1uHrgdFty4IcqBQDUOp8zJgBCETjOv0HS7/So0E/GAowREi9REyFXjh4/ZMjTI/ibPNm+4fnSNwltV1g8uyKma1Y4BnaTvOMAS9LAo13SqVvOLSmzAv99rtqUkV1LkhuHqRBT/NYQrBC7AHS+dmUyTM8KE3MP4d49ZKUkkhEOUIUUANWUug1hkhAKyP4MPlsvo5h3C8dhzcdwX0pcOn3tdX822Lw2ri/sEyaH9qGDjCsyUvIg5WVagcPfK+LsP6EUqyvX9eHfvO3SRvKUctpwnN3YbxtzrYfTNtUaycW75MsJZID6aKp/Q9isS/pL0n6FBiQNIkGUvhvbpseEWDpVKlhgnDXwpM1+BcXF4Xqj/6WrJY+ATLI7lPbJ55ICkuqPDbfUU4xjmLUryZv/lJvLolfPvjSmR8OGwI49gBB+25J1/vAISxMlwQFXmsA3ulQZHiG082MfveXkGp+jnK11oUqUekl10QsCve5FwA3dQtCRpvJAEVgbiiw9SbmPJBTDaa6T6LE3jvQB26XC7B6oEawHija1b+wcuRXBPAOBVg45Z8qMuL8=
+  on:
+    tags: true
+    repo: andrejewski/trent
+  skip_cleanup: true
