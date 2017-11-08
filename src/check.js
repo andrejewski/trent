@@ -59,10 +59,18 @@ export function getErrorMessage (schema, {subject, isInverted} = {}) {
   switch (type) {
     case 'is': return `${data}`
     case 'or': {
+      if (data.length === 0) {
+        return 'nothing'
+      }
+
       const cases = data.map(schema => getErrorMessage(schema))
       return humanList(cases, 'or')
     }
     case 'and': {
+      if (data.length === 0) {
+        return 'anything'
+      }
+
       const cases = data.map(schema => getErrorMessage(schema))
       return humanList(cases, 'and')
     }
@@ -118,4 +126,30 @@ export function getErrors (schema, value, errors, {subject, isInverted} = {}) {
 
   const message = getErrorMessage(schema, {subject, isInverted})
   errors.push(new Error(message))
+}
+
+export function iterateMatcher (schema, fn) {
+  if (schema.__isTerminal) {
+    return
+  }
+  fn(schema)
+  const {type, data} = schema
+  switch (type) {
+    case 'or': return data.forEach(matcher => iterateMatcher(matcher, fn))
+    case 'and': return data.forEach(matcher => iterateMatcher(matcher, fn))
+    case 'array': return iterateMatcher(data, fn)
+    case 'tuple': return data.forEach(matcher => iterateMatcher(matcher, fn))
+    case 'object':
+      for (let key in data) {
+        iterateMatcher(data[key], fn)
+      }
+  }
+}
+
+export function replaceMatcher (schema, type, fn) {
+  iterateMatcher(schema, matcher => {
+    if (matcher.type === type) {
+      fn(matcher)
+    }
+  })
 }

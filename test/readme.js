@@ -1,5 +1,9 @@
 import test from 'ava'
-import {createSpec, createCustomCheck} from '../src'
+import {
+  createSpec,
+  createCustomCheck,
+  createDependentSpecs
+} from '../src'
 
 test('first example', t => {
   const Matrix = createSpec(() => [[Number]])
@@ -66,4 +70,74 @@ test('createCustomCheck() example', t => {
 
   const Code = createSpec(() => lowercase)
   t.is(Code.getErrors('8').length, 0)
+})
+
+test('createDependentSpecs() example', t => {
+  const {Foo} = createDependentSpecs(({ref}) => ({
+    Foo: {barList: [ref('Bar')]},
+    Bar: {fooList: [ref('Foo')]}
+  }))
+
+  t.is(Foo.getErrors({
+    barList: [{
+      fooList: [{
+        barList: [{
+          fooList: []
+        }]
+      }]
+    }]
+  }).length, 0)
+})
+
+test('himalaya example', t => {
+  const Text = createSpec(({is}) => ({
+    type: is('text'),
+    content: String
+  }))
+
+  const {
+    Node,
+    Element,
+    Comment
+  } = createDependentSpecs(({is, or, ref, nullable}) => ({
+    Node: or([
+      ref('Element'),
+      ref('Comment'),
+      Text
+    ]),
+    Element: {
+      type: is('element'),
+      tagName: String,
+      children: [ref('Node')],
+      attributes: [{
+        key: String,
+        value: nullable(String)
+      }]
+    },
+    Comment: {
+      type: is('comment'),
+      content: String
+    }
+  }))
+
+  t.is(Node.getErrors({
+    type: 'element',
+    tagName: 'textarea',
+    children: [{
+      type: 'text',
+      content: 'Hello World'
+    }],
+    attributes: [{
+      key: 'disabled',
+      value: null
+    }]
+  }).length, 0)
+  t.is(Text.getErrors({type: 'text', content: 'Cake'}).length, 0)
+  t.is(Comment.getErrors({type: 'comment', content: 'Ham'}).length, 0)
+  t.is(Element.getErrors({
+    type: 'element',
+    tagName: 'main',
+    children: [],
+    attributes: []
+  }).length, 0)
 })
