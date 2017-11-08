@@ -33,10 +33,10 @@ console.log(errors)
 ## Documentation
 
 ### `createSpec(builder: builtInChecks -> Check): Spec`
-Creates a `Spec` using the `builder` function which receives the built-in checks described below. The builder must return a valid check or an error throws. The `Spec` object returned has a method `getErrors(value)` which returns an array of type errors for `value`.
+Create a `Spec` using the `builder` function which receives the built-in checks described below. The builder must return a valid check or an error throws. The `Spec` object returned has a method `getErrors(value)` which returns an array of type errors for `value`.
 
 ### Checks
-- Literal checks
+- Value checks
   - [`Spec`](#spec)
   - [`Constructor`](#constructor)
   - [Array `[check]`](#array-check)
@@ -246,3 +246,72 @@ assert(Code.getErrors('8').length === 0)
 ```
 
 *Note:* Custom checks cannot nest checks within them. In a tree structure analogy, custom checks must be leaves. The reason for this limitation is the complexity of creating good error messages.
+
+### `createDependentSpecs(builder : builtInChecks -> {Check}) {Spec}`
+Create a collection of `Spec`s which are dependent and/or recursive.
+
+For example, we have two types `Foo` and `Bar` which both can contain each other. We can try to write this system with `createSpec`:
+
+```js
+import {createSpec} from 'trent'
+var Foo = createSpec(() => ({barList: [Bar]}))
+var Bar = createSpec(() => ({fooList: [Foo]}))
+```
+
+Creating `Foo` with undefined `Bar` will not work. We need `createDependentSpecs` to enable a "late-binding" where order does not matter. We use the `ref` built-in check available to `createDependentSpecs` to reference `Spec`s.
+
+```js
+import {createDependentSpecs} from 'trent'
+import assert from 'assert'
+const {Foo} = createDependentSpecs(({ref}) => ({
+  Foo: {barList: [ref('Bar')]},
+  Bar: {fooList: [ref('Foo')]}
+}))
+
+assert(Foo.getErrors({
+  barList: [{
+    fooList: [{
+      barList: [{
+        fooList: []
+      }]
+    }]
+  }]
+}).length === 0)
+```
+
+#### Real-life example
+I maintain the HTML parser [Himalaya](https://github.com/andrejewski/himalaya) which follows a strict [specification](https://github.com/andrejewski/himalaya/blob/master/text/ast-spec-v1.md) for its output. The output contains Nodes which can have children Nodes, so we need a recursive type.
+
+```js
+import {
+  createSpec,
+  createDependentSpecs
+} from 'trent'
+
+// I pull this out to show that you can
+const Text = createSpec(({is}) => ({
+  type: is('text'),
+  content: String
+}))
+
+export const {Node} = createDependentSpecs(({is, or, ref, nullable}) => ({
+  Node: or([
+    ref('Element'),
+    ref('Comment'),
+    Text
+  ]),
+  Element: {
+    type: is('element'),
+    tagName: String,
+    children: [ref('Node')],
+    attributes: [{
+      key: String,
+      value: nullable(String)
+    }]
+  },
+  Comment: {
+    type: is('comment'),
+    content: String
+  }
+}))
+```
